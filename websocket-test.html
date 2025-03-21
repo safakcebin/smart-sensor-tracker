@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Cihaz Verileri - WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1, h2, h3 {
+            color: #343a40;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        #status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .authenticated {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        .data-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .historical {
+            background-color: #e2f3f5;
+            border-left-color: #0099cc;
+        }
+        .realtime {
+            background-color: #f0f9e8;
+            border-left-color: #28a745;
+        }
+        .error-msg {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .system {
+            background-color: #e6f3ff;
+            border-left-color: #007bff;
+        }
+        .auth {
+            background-color: #e6e6ff;
+            border-left-color: #6610f2;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .data-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .buttons {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+        }
+        .auth-panel {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f0ff;
+            border-radius: 8px;
+            border: 1px solid #d0d0ff;
+        }
+        .auth-panel h3 {
+            margin-top: 0;
+            color: #6610f2;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .user-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>IoT Cihaz Verileri - WebSocket Test</h1>
+    
+    <div id="status" class="disconnected">Bağlantı Yok</div>
+    
+    <div class="auth-panel">
+        <h3>Kullanıcı Kimlik Doğrulama</h3>
+        <div class="form-group">
+            <label for="authToken">Auth Token:</label>
+            <input type="text" id="authToken" placeholder="JWT Token girin" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJTWVNURU1fQURNSU4iLCJjb21wYW55SWQiOiIxIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c">
+        </div>
+        <div class="form-group">
+            <label for="userRole">Test için Rol Seçin:</label>
+            <select id="userRole">
+                <option value="SYSTEM_ADMIN">Sistem Yöneticisi</option>
+                <option value="COMPANY_ADMIN">Şirket Yöneticisi</option>
+                <option value="USER">Normal Kullanıcı</option>
+            </select>
+        </div>
+        <button id="authenticate">Kimlik Doğrula</button>
+        <div id="userInfo" class="user-info" style="display: none;"></div>
+    </div>
+    
+    <div class="buttons">
+        <button id="connect">Bağlan</button>
+        <button id="disconnect" disabled>Bağlantıyı Kes</button>
+        <button id="clear">Mesajları Temizle</button>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-value" id="deviceCount">0</div>
+            <div class="stat-label">Cihaz Sayısı</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="messageCount">0</div>
+            <div class="stat-label">Mesaj Sayısı</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="lastUpdate">-</div>
+            <div class="stat-label">Son Güncelleme</div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Geçmiş Veriler (Son 1 Saat)</h2>
+            <div id="historicalData" class="data-container"></div>
+        </div>
+        <div class="panel">
+            <h2>Gerçek Zamanlı Veriler</h2>
+            <div id="realtimeData" class="data-container"></div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <h2>Ham Veri</h2>
+        <pre id="rawData">Henüz veri yok</pre>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // DOM elementleri
+        const connectBtn = document.getElementById('connect');
+        const disconnectBtn = document.getElementById('disconnect');
+        const clearBtn = document.getElementById('clear');
+        const authenticateBtn = document.getElementById('authenticate');
+        const statusDiv = document.getElementById('status');
+        const historicalDataDiv = document.getElementById('historicalData');
+        const realtimeDataDiv = document.getElementById('realtimeData');
+        const rawDataPre = document.getElementById('rawData');
+        const deviceCountDiv = document.getElementById('deviceCount');
+        const messageCountDiv = document.getElementById('messageCount');
+        const lastUpdateDiv = document.getElementById('lastUpdate');
+        const authTokenInput = document.getElementById('authToken');
+        const userRoleSelect = document.getElementById('userRole');
+        const userInfoDiv = document.getElementById('userInfo');
+        
+        let socket;
+        let messageCount = 0;
+        let deviceSet = new Set();
+        let isAuthenticated = false;
+        let authToken = '';
+        
+        // Bağlantı durumunu güncelle
+        function updateStatus(connected, authenticated = false) {
+            if (connected && authenticated) {
+                statusDiv.textContent = 'Bağlantı Kuruldu ve Kimlik Doğrulandı';
+                statusDiv.className = 'authenticated';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                authenticateBtn.disabled = true;
+            } else if (connected) {
+                statusDiv.textContent = 'Bağlantı Kuruldu';
+                statusDiv.className = 'connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                authenticateBtn.disabled = false;
+            } else {
+                statusDiv.textContent = 'Bağlantı Yok';
+                statusDiv.className = 'disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                authenticateBtn.disabled = true;
+                isAuthenticated = false;
+                userInfoDiv.style.display = 'none';
+            }
+        }
+        
+        // Mesaj ekle
+        function addMessage(container, type, data) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            // Mesaj başlığı
+            const title = document.createElement('div');
+            title.className = 'message-title';
+            
+            if (data.message) {
+                title.textContent = data.message;
+            } else {
+                title.textContent = 'Veri Alındı';
+            }
+            
+            messageDiv.appendChild(title);
+            
+            // Veri varsa göster
+            if (data.data && data.data.length > 0) {
+                // Cihaz sayısını güncelle
+                const deviceIds = new Set();
+                
+                data.data.forEach(item => {
+                    if (item.device_id) {
+                        deviceIds.add(item.device_id);
+                        deviceSet.add(item.device_id);
+                    }
+                    
+                    const dataItem = document.createElement('div');
+                    dataItem.className = 'data-item';
+                    
+                    // Veri içeriğini göster
+                    let content = '';
+                    if (item.device_id) content += `Cihaz: ${item.device_id} | `;
+                    if (item._measurement) content += `Ölçüm: ${item._measurement} | `;
+                    if (item._field) content += `Alan: ${item._field} | `;
+                    if (item._value) content += `Değer: ${item._value} | `;
+                    if (item._time) content += `Zaman: ${new Date(item._time).toLocaleString()}`;
+                    
+                    dataItem.textContent = content;
+                    messageDiv.appendChild(dataItem);
+                });
+                
+                // Cihaz sayısını güncelle
+                deviceCountDiv.textContent = deviceSet.size;
+            }
+            
+            // Zaman damgası
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = data.timestamp ? new Date(data.timestamp).toLocaleString() : new Date().toLocaleString();
+            messageDiv.appendChild(timestamp);
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            // Mesaj sayısını güncelle
+            messageCount++;
+            messageCountDiv.textContent = messageCount;
+            
+            // Son güncelleme zamanını güncelle
+            lastUpdateDiv.textContent = new Date().toLocaleTimeString();
+            
+            // Ham veriyi göster
+            rawDataPre.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // Kimlik doğrulama butonuna tıklandığında
+        authenticateBtn.addEventListener('click', () => {
+            if (!socket) {
+                addMessage(realtimeDataDiv, 'error-msg', { 
+                    message: 'Önce WebSocket sunucusuna bağlanmalısınız!' 
+                });
+                return;
+            }
+            
+            // Test için token oluştur
+            authToken = authTokenInput.value.trim();
+            
+            if (!authToken) {
+                addMessage(realtimeDataDiv, 'error-msg', { 
+                    message: 'Geçerli bir token girmelisiniz!' 
+                });
+                return;
+            }
+            
+            // Seçilen rolü al ve token'a yansıt (sadece test için)
+            const selectedRole = userRoleSelect.value;
+            
+            // Token'ı sunucuya gönder
+            socket.emit('authenticate', { token: authToken });
+            
+            addMessage(realtimeDataDiv, 'auth', { 
+                message: 'Kimlik doğrulama isteği gönderildi',
+                role: selectedRole
+            });
+        });
+        
+        // Bağlan butonuna tıklandığında
+        connectBtn.addEventListener('click', () => {
+            // WebSocket sunucusuna bağlan
+            socket = io('http://localhost:3000', {
+                transports: ['websocket', 'polling']
+            });
+            
+            // Bağlantı olaylarını dinle
+            socket.on('connect', () => {
+                console.log('WebSocket sunucusuna bağlandı');
+                updateStatus(true);
+                addMessage(realtimeDataDiv, 'system', { message: 'WebSocket sunucusuna bağlandı' });
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('WebSocket sunucusundan bağlantı kesildi');
+                updateStatus(false);
+                addMessage(realtimeDataDiv, 'system', { message: 'WebSocket sunucusundan bağlantı kesildi' });
+            });
+            
+            socket.on('connect_error', (error) => {
+                console.error('Bağlantı hatası:', error);
+                addMessage(realtimeDataDiv, 'error-msg', { message: `Bağlantı hatası: ${error.message}` });
+            });
+            
+            // Özel olayları dinle
+            socket.on('connected', (data) => {
+                console.log('Bağlantı olayı:', data);
+                addMessage(realtimeDataDiv, 'system', data);
+            });
+            
+            // Kimlik doğrulama olaylarını dinle
+            socket.on('authenticated', (data) => {
+                console.log('Kimlik doğrulandı:', data);
+                isAuthenticated = true;
+                updateStatus(true, true);
+                addMessage(realtimeDataDiv, 'auth', data);
+                
+                // Kullanıcı bilgilerini göster
+                userInfoDiv.style.display = 'block';
+                userInfoDiv.innerHTML = `
+                    <strong>Kullanıcı ID:</strong> ${data.userId}<br>
+                    <strong>Rol:</strong> ${data.role}<br>
+                    <strong>Durum:</strong> Kimlik doğrulandı
+                `;
+            });
+            
+            socket.on('authentication_error', (data) => {
+                console.error('Kimlik doğrulama hatası:', data);
+                isAuthenticated = false;
+                addMessage(realtimeDataDiv, 'error-msg', data);
+            });
+            
+            socket.on('historicalData', (data) => {
+                console.log('Geçmiş veriler alındı:', data);
+                addMessage(historicalDataDiv, 'historical', data);
+            });
+            
+            socket.on('realtimeData', (data) => {
+                console.log('Gerçek zamanlı veri alındı:', data);
+                addMessage(realtimeDataDiv, 'realtime', data);
+            });
+            
+            socket.on('error', (data) => {
+                console.error('Sunucu hatası:', data);
+                addMessage(realtimeDataDiv, 'error-msg', data);
+            });
+        });
+        
+        // Bağlantıyı kes butonuna tıklandığında
+        disconnectBtn.addEventListener('click', () => {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        });
+        
+        // Temizle butonuna tıklandığında
+        clearBtn.addEventListener('click', () => {
+            historicalDataDiv.innerHTML = '';
+            realtimeDataDiv.innerHTML = '';
+            rawDataPre.textContent = 'Henüz veri yok';
+            messageCount = 0;
+            messageCountDiv.textContent = messageCount;
+        });
+        
+        // Başlangıçta durumu güncelle
+        updateStatus(false);
+    </script>
+</body>
+</html>
