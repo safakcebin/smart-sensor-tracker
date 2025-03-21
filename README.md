@@ -149,6 +149,14 @@ Not: Tüm istekler için JWT token gereklidir (login hariç). Token'ı Authoriza
 Authorization: Bearer your_jwt_token
 ```
 
+## Sensör Simülasyonu
+
+Sensör verilerini simüle etmek için [iot-device-emulator](https://github.com/safakcebin/iot-device-emulator) reposunu kullanabilirsiniz. Bu simülasyon aracı:
+
+- PostgreSQL veritabanından sensör ID'lerini çeker
+- Mosquitto MQTT broker' veriler gönderilerek proje simüle edilir
+
+
 ## Test
 
 ```bash
